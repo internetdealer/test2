@@ -1,7 +1,11 @@
 import { Phone, Mail, MapPin, Clock } from 'lucide-react';
 import { useState } from 'react';
 
-const CONTACT_API = '/.netlify/functions/submit-contact';
+// Используйте переменную окружения или укажите URL вашего endpoint
+// Для Netlify: '/.netlify/functions/submit-contact'
+// Для Vercel: '/api/submit-contact'
+// Для внешнего сервера: 'https://your-server.com/api/submit-contact'
+const CONTACT_API = import.meta.env.VITE_CONTACT_API || '/.netlify/functions/submit-contact';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
