@@ -40,20 +40,11 @@ exports.handler = async (event) => {
   const senderName = process.env.UNISENDER_SENDER_NAME || 'Заявка с сайта';
   const senderEmail = process.env.UNISENDER_SENDER_EMAIL;
 
-  if (!apiKey) {
+  if (!apiKey || !senderEmail) {
     return {
       statusCode: 500,
       body: JSON.stringify({
-        error: 'Server misconfiguration: Set UNISENDER_API_KEY in Netlify env',
-      }),
-    };
-  }
-
-  if (!senderEmail) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        error: 'Server misconfiguration: Set UNISENDER_SENDER_EMAIL in Netlify env',
+        error: 'Server misconfiguration: Set UNISENDER_API_KEY and UNISENDER_SENDER_EMAIL in Netlify env',
       }),
     };
   }
@@ -87,29 +78,22 @@ exports.handler = async (event) => {
       body: html,
       text_body: text,
     });
+    
     if (email) {
       params.append('reply_to', email);
     }
 
-    const res = await fetch(`${UNISENDER_API_URL}?format=json`, {
+    const res = await fetch(`${UNISENDER_API_URL}?${params.toString()}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
     });
 
-    const data = await res.json().catch(() => ({}));
+    const data = await res.json();
 
     if (data.error) {
       return {
         statusCode: res.status || 400,
         body: JSON.stringify({ error: data.error || 'Unisender send failed' }),
-      };
-    }
-
-    if (!res.ok) {
-      return {
-        statusCode: res.status,
-        body: JSON.stringify({ error: 'Unisender send failed', details: data }),
       };
     }
 
