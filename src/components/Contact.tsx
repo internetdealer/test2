@@ -1,6 +1,8 @@
 import { Phone, Mail, MapPin, Clock } from 'lucide-react';
 import { useState } from 'react';
 
+const CONTACT_API = '/.netlify/functions/submit-contact';
+
 export default function Contact() {
   const [formData, setFormData] = useState({
     name: '',
@@ -9,14 +11,31 @@ export default function Contact() {
     message: '',
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitted(true);
-    setTimeout(() => {
-      setIsSubmitted(false);
+    setError(null);
+    setIsLoading(true);
+    try {
+      const res = await fetch(CONTACT_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || `Ошибка ${res.status}. Попробуйте позже.`);
+        return;
+      }
+      setIsSubmitted(true);
       setFormData({ name: '', phone: '', email: '', message: '' });
-    }, 3000);
+    } catch {
+      setError('Не удалось отправить заявку. Проверьте интернет и попробуйте снова.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -125,6 +144,11 @@ export default function Contact() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
+                {error && (
+                  <div className="bg-red-500/20 border border-red-500 rounded-lg px-4 py-3 text-red-300 text-sm">
+                    {error}
+                  </div>
+                )}
                 <div>
                   <label htmlFor="name" className="block text-sm font-semibold text-gray-300 mb-2">
                     Ваше имя *
@@ -190,9 +214,10 @@ export default function Contact() {
 
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-4 rounded-lg font-semibold hover:from-cyan-500 hover:to-blue-500 transition-colors shadow-lg hover:shadow-cyan-500/50"
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-4 rounded-lg font-semibold hover:from-cyan-500 hover:to-blue-500 transition-colors shadow-lg hover:shadow-cyan-500/50 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  Отправить заявку
+                  {isLoading ? 'Отправка...' : 'Отправить заявку'}
                 </button>
 
                 <p className="text-sm text-gray-500 text-center">
