@@ -1,7 +1,7 @@
 import { Phone, Mail, MapPin, Clock } from 'lucide-react';
 import { useState } from 'react';
 
-const CONTACT_API = '/.netlify/functions/submit-contact';
+const FORM_ENDPOINT = 'https://formsubmit.co/ajax/internetdealerr@gmail.com';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -16,26 +16,30 @@ export default function Contact() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setIsLoading(true);
+    setError(null);
+
     try {
-      const res = await fetch(CONTACT_API, {
+      const response = await fetch(FORM_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          _subject: 'Новая заявка с сайта',
+          _template: 'table',
+        }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error || `Ошибка ${res.status}. Попробуйте позже.`);
-        return;
-      }
+
+      if (!response.ok) throw new Error('Ошибка отправки');
+
       setIsSubmitted(true);
       setFormData({ name: '', phone: '', email: '', message: '' });
-      setTimeout(() => {
-        setIsSubmitted(false);
-      }, 5000);
+      setTimeout(() => setIsSubmitted(false), 5000);
     } catch {
-      setError('Не удалось отправить заявку. Проверьте интернет и попробуйте снова.');
+      setError('Не удалось отправить заявку. Попробуйте позже или свяжитесь по телефону.');
     } finally {
       setIsLoading(false);
     }
@@ -145,13 +149,19 @@ export default function Contact() {
                 <div className="text-cyan-400 text-lg font-semibold mb-2">Спасибо за обращение!</div>
                 <p className="text-gray-400">Мы свяжемся с вами в ближайшее время</p>
               </div>
+            ) : error ? (
+              <div className="bg-red-600/20 border border-red-500 rounded-lg p-6 text-center">
+                <p className="text-red-400 mb-4">{error}</p>
+                <button
+                  type="button"
+                  onClick={() => setError(null)}
+                  className="text-cyan-400 hover:text-cyan-300 underline"
+                >
+                  Попробовать снова
+                </button>
+              </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
-                {error && (
-                  <div className="bg-red-500/20 border border-red-500 rounded-lg px-4 py-3 text-red-300 text-sm">
-                    {error}
-                  </div>
-                )}
                 <div>
                   <label htmlFor="name" className="block text-sm font-semibold text-gray-300 mb-2">
                     Ваше имя *
